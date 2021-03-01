@@ -71,7 +71,6 @@ const config = (env, argv) => {
           test: /\.vue$/,
           loader: 'vue-loader',
           options: {
-            // CSS 抽出を有効にする
             extractCSS: isProduction
           }
         },
@@ -122,8 +121,7 @@ const config = (env, argv) => {
     plugins: [
       new VueLoaderPlugin(),
       ...(isProduction
-        ? // プラグインを追加してください！
-          [
+        ? [
             new MiniCssExtractPlugin({
               filename: 'style/style.min.css'
             })
