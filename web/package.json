@@ -6,7 +6,8 @@
     "serve": "vue-cli-service serve",
     "build:dev": "webpack --mode=development --config=./build/webpack.client.config.js&&webpack --mode=development --config=./build/webpack.server.config.js",
     "build:prod": "webpack -p --config=./build/webpack.client.config.js&&webpack -p --config=./build/webpack.server.config.js",
-    "lint": "vue-cli-service lint"
+    "lint": "vue-cli-service lint",
+    "build-deploy": "npm run build:prod &&aws s3 sync ./web/  s3://test-vue-ssr/ --exclude \"*\" --include \"dist/*\" --include \"public/*\""
   },
   "dependencies": {
     "core-js": "^3.6.5",

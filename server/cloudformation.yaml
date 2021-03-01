@@ -9,8 +9,44 @@ Resources:
       DefinitionUri: ./simple-proxy-api.yaml
       StageName: prod
       Variables:
-        ServerlessExpressLambdaFunctionName: !Ref YOUR_SERVERLESS_EXPRESS_LAMBDA_FUNCTION_NAME
-
+        ServerlessExpressLambdaFunctionName: !Ref TestVueLambda
+  CloudfrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Origins:
+          - DomainName: !Sub
+              - '${ApiId}.execute-api.${AWS::Region}.amazonaws.com'
+              - ApiId: !Ref ApiGatewayApi
+            OriginPath: /prod
+            Id: ApiGateway
+            CustomOriginConfig:
+              HTTPPort: 80
+              HTTPSPort: 443
+              OriginProtocolPolicy: match-viewer
+        DefaultCacheBehavior:
+          TargetOriginId: ApiGateway
+          ForwardedValues:
+            QueryString: true
+            Cookies:
+              Forward: all
+            Headers:
+              - Authorization
+              - Origin
+              - Accept
+              - Accept-Encoding
+              - Accept-Language
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - HEAD
+            - DELETE
+            - POST
+            - GET
+            - OPTIONS
+            - PUT
+            - PATCH
+        HttpVersion: http2
   LambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -38,7 +74,7 @@ Resources:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !GetAtt YOUR_SERVERLESS_EXPRESS_LAMBDA_FUNCTION_NAME.Arn
+      FunctionName: !GetAtt TestVueLambda.Arn
       Principal: apigateway.amazonaws.com
       SourceArn: !Join
         - ''
@@ -50,14 +86,14 @@ Resources:
           - !Ref ApiGatewayApi
           - "/*/*"
 
-  YOUR_SERVERLESS_EXPRESS_LAMBDA_FUNCTION_NAME:
+  TestVueLambda:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ./
       Handler: lambda.handler
       MemorySize: 1024
       Role: !GetAtt LambdaExecutionRole.Arn
-      Runtime: nodejs8.10
+      Runtime: nodejs10.x
       Timeout: 30
       Events:
         ProxyApiRoot:
@@ -83,7 +119,7 @@ Outputs:
         - ".console.aws.amazon.com/lambda/home?region="
         - !Ref AWS::Region
         - "#/functions/"
-        - !Ref YOUR_SERVERLESS_EXPRESS_LAMBDA_FUNCTION_NAME
+        - !Ref TestVueLambda
 
   ApiGatewayApiConsoleUrl:
     Description: Console URL for the API Gateway API's Stage.
@@ -107,3 +143,11 @@ Outputs:
         - ".execute-api."
         - !Ref AWS::Region
         - ".amazonaws.com/prod/"
+  CloudfrontUrl:
+    Description:
+      Invoke URL for your cloudfront distributition API. Clicking this link will perform a GET request
+      on the root resource of your API.
+    Value: !Join
+      - ''
+      - - https://
+        - !GetAtt CloudfrontDistribution.DomainName
